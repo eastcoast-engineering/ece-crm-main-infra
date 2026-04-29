@@ -1,0 +1,4 @@
+aws_region           = "us-east-1"
+backend_image        = "123456789012.dkr.ecr.us-east-1.amazonaws.com/smart-erp-production-backend:latest"
+frontend_bucket_name = "smart-erp-production-frontend-static"
+enable_cloudfront    = true
