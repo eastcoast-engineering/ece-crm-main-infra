@@ -94,3 +94,24 @@ terraform plan
 
 - The module currently uses default VPC/subnets for lowest setup overhead.
 - Consider custom VPC, ALB, private networking, and WAF before production hardening.
+
+
+### Data Contract Rule: No Parser-Only Functions
+
+- Do not create functions whose only purpose is renaming, reshaping, or field-to-field mapping (for example `parseX`, `mapX`, `toX`, `fromX`, `convertX`, adapter-only helpers).
+- Prefer one intentional contract reused end-to-end: frontend form shape, frontend service payload, API request/response DTOs, backend structs, and persistence-facing models should align by design.
+- When frontend and backend shapes diverge, fix the source contract first instead of adding a mapping layer.
+- Treat parser-only conversion code as a code smell and avoid duplicate DTOs that represent the same flow without business value.
+
+Allowed exceptions (must be intentional and documented):
+- Third-party/external API normalization into internal models.
+- Database-specific type conversion into API-safe responses.
+- Legacy migration/backfill compatibility.
+- Meaningful validation/normalization that changes semantics (not simple renaming).
+- Sensitive-field protection before returning data to clients.
+- Reporting/export/chart/UI-only projection models.
+
+Before adding any conversion helper:
+- Check whether the same shared contract can be used across frontend and backend.
+- Prefer updating DTO/interface/struct definitions over adding mapping glue.
+- If conversion is still required, document the reason with a short comment near the implementation.
