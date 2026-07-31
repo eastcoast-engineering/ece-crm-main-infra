@@ -1,5 +1,18 @@
 locals {
-  bucket_name = replace("${var.domain_name}", "_", "-")
+  # Keep the existing bucket naming unchanged to avoid replacing the bucket.
+  bucket_name = replace(var.domain_name, "_", "-")
+
+  domain_slug = replace(
+    replace(lower(var.domain_name), ".", "-"),
+    "_",
+    "-"
+  )
+
+  redirect_function_name = substr(
+    "${local.domain_slug}-${var.environment}-redirect-www",
+    0,
+    64
+  )
 }
 
 resource "aws_s3_bucket" "frontend" {
@@ -157,9 +170,9 @@ resource "aws_s3_bucket_policy" "frontend" {
 }
 
 resource "aws_cloudfront_function" "redirect_www" {
-  name    = "redirect-www-to-root"
+  name    = local.redirect_function_name
   runtime = "cloudfront-js-1.0"
-  comment = "Redirect www to non-www"
+  comment = "Redirect www.${var.domain_name} to ${var.domain_name}"
   publish = true
 
   code = <<EOF
