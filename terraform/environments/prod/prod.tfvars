@@ -1,10 +1,10 @@
 environment = "prod"
 root_domain = "quotashark.com"
 
-front_website_github_repo   = "eastcoast-engineering/eastcoast-engineering-CRM-frontend"
+front_website_github_repo   = "eastcoast-engineering/ece-crm-main-frontend"
 front_website_github_branch = "main"
 
-backend_github_repo   = "eastcoast-engineering/corporate-software-backend-template"
+backend_github_repo   = "eastcoast-engineering/ece-crm-main-backend"
 backend_github_branch = "main"
 
 # For a GitHub repository created after July 15, 2026, set the exact immutable
