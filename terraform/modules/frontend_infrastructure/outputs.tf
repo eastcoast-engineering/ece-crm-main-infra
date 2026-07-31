@@ -1,25 +1,25 @@
 output "bucket_name" {
-  description = "Name of the frontend S3 bucket."
+  description = "Frontend S3 bucket name."
   value       = aws_s3_bucket.frontend.id
 }
 
 output "bucket_arn" {
-  description = "ARN of the frontend S3 bucket."
+  description = "Frontend S3 bucket ARN."
   value       = aws_s3_bucket.frontend.arn
 }
 
 output "cloudfront_distribution_id" {
-  description = "ID of the frontend CloudFront distribution."
+  description = "CloudFront distribution ID."
   value       = aws_cloudfront_distribution.frontend.id
 }
 
 output "cloudfront_distribution_arn" {
-  description = "ARN of the frontend CloudFront distribution."
+  description = "CloudFront distribution ARN."
   value       = aws_cloudfront_distribution.frontend.arn
 }
 
 output "cloudfront_domain" {
-  description = "CloudFront domain name."
+  description = "CloudFront distribution domain name."
   value       = aws_cloudfront_distribution.frontend.domain_name
 }
 

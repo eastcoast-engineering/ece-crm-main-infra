@@ -1,34 +1,67 @@
 locals {
   project_slug = trim(
-    replace(lower(var.project_name), "/[^a-z0-9_-]/", "-"),
+    replace(lower(var.project_name), "/[^a-z0-9_-]+/", "-"),
     "-"
   )
 
   environment_slug = trim(
-    replace(lower(var.environment), "/[^a-z0-9_-]/", "-"),
+    replace(lower(var.environment), "/[^a-z0-9_-]+/", "-"),
     "-"
   )
 
   branch_slug = trim(
-    replace(lower(var.branch), "/[^a-z0-9_-]/", "-"),
+    replace(lower(var.branch), "/[^a-z0-9_-]+/", "-"),
     "-"
   )
 
-  # IAM role names are limited to 64 characters.
+  deployment_slug = var.deployment_name == null ? null : trim(
+    replace(lower(var.deployment_name), "/[^a-z0-9_-]+/", "-"),
+    "-"
+  )
+
+  name_parts = concat(
+    [local.project_slug, local.environment_slug],
+    local.deployment_slug == null ? [] : [local.deployment_slug],
+    [local.branch_slug]
+  )
+
+  resource_name_prefix = join("-", local.name_parts)
+
   role_name = substr(
-    "${local.project_slug}-${local.environment_slug}-${local.branch_slug}-github-deploy",
+    "${local.resource_name_prefix}-github-deploy",
     0,
     64
   )
 
   policy_name = substr(
-    "${local.project_slug}-${local.environment_slug}-${local.branch_slug}-github-deploy-policy",
+    "${local.resource_name_prefix}-github-deploy-policy",
     0,
     128
   )
+
+  github_subject = var.github_subject_override != null ? var.github_subject_override : (
+    "repo:${var.github_repo}:ref:refs/heads/${var.branch}"
+  )
+
+  frontend_bucket_arn          = var.frontend_bucket_arn != null ? var.frontend_bucket_arn : "*"
+  frontend_objects_arn         = var.frontend_bucket_arn != null ? "${var.frontend_bucket_arn}/*" : "*"
+  cloudfront_distribution_arn  = var.cloudfront_distribution_arn != null ? var.cloudfront_distribution_arn : "*"
+  ecr_repository_arn           = var.ecr_repository_arn != null ? var.ecr_repository_arn : "*"
+  ecs_service_arn              = var.ecs_service_arn != null ? var.ecs_service_arn : "*"
+  ecs_task_execution_role_arn  = var.ecs_task_execution_role_arn != null ? var.ecs_task_execution_role_arn : "*"
+  ecs_task_role_arn            = var.ecs_task_role_arn != null ? var.ecs_task_role_arn : "*"
+
+  common_tags = merge(
+    {
+      Project        = var.project_name
+      Environment    = var.environment
+      DeploymentType = var.deployment_type
+      ManagedBy      = "Terraform"
+    },
+    var.tags
+  )
 }
 
-# Reuse the GitHub OIDC provider that already exists in this AWS account.
 data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
@@ -40,11 +73,8 @@ data "aws_iam_policy_document" "github_oidc_assume_role" {
     actions = ["sts:AssumeRoleWithWebIdentity"]
 
     principals {
-      type = "Federated"
-
-      identifiers = [
-        data.aws_iam_openid_connect_provider.github.arn
-      ]
+      type        = "Federated"
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
     }
 
     condition {
@@ -56,29 +86,22 @@ data "aws_iam_policy_document" "github_oidc_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-
-      values = [
-        "repo:${var.github_repo}:ref:refs/heads/${var.branch}"
-      ]
+      values   = [local.github_subject]
     }
   }
 }
 
 resource "aws_iam_role" "github_oidc_role" {
-  name = local.role_name
-
+  name               = local.role_name
   assume_role_policy = data.aws_iam_policy_document.github_oidc_assume_role.json
+  description        = "GitHub ${var.deployment_type} deployment role for ${var.github_repo}:${var.branch}"
 
-  description = "GitHub deployment role for ${var.github_repo}:${var.branch}"
-
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-  }
+  tags = local.common_tags
 }
 
-data "aws_iam_policy_document" "github_deployment" {
+data "aws_iam_policy_document" "frontend_deployment" {
+  count = var.deployment_type == "frontend" ? 1 : 0
+
   statement {
     sid    = "ListFrontendBucket"
     effect = "Allow"
@@ -88,9 +111,7 @@ data "aws_iam_policy_document" "github_deployment" {
       "s3:GetBucketLocation",
     ]
 
-    resources = [
-      var.frontend_bucket_arn
-    ]
+    resources = [local.frontend_bucket_arn]
   }
 
   statement {
@@ -103,9 +124,7 @@ data "aws_iam_policy_document" "github_deployment" {
       "s3:DeleteObject",
     ]
 
-    resources = [
-      "${var.frontend_bucket_arn}/*"
-    ]
+    resources = [local.frontend_objects_arn]
   }
 
   statement {
@@ -120,21 +139,112 @@ data "aws_iam_policy_document" "github_deployment" {
       "cloudfront:GetDistributionConfig",
     ]
 
-    resources = [
-      var.cloudfront_distribution_arn
-    ]
+    resources = [local.cloudfront_distribution_arn]
   }
+}
+
+data "aws_iam_policy_document" "backend_deployment" {
+  count = var.deployment_type == "backend" ? 1 : 0
+
+  statement {
+    sid       = "GetECRAuthorizationToken"
+    effect    = "Allow"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "PushBackendImages"
+    effect = "Allow"
+
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+
+    resources = [local.ecr_repository_arn]
+  }
+
+  statement {
+    sid    = "ManageTaskDefinitionRevisions"
+    effect = "Allow"
+
+    actions = [
+      "ecs:DescribeTaskDefinition",
+      "ecs:RegisterTaskDefinition",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "DeployBackendService"
+    effect = "Allow"
+
+    actions = [
+      "ecs:DescribeServices",
+      "ecs:UpdateService",
+    ]
+
+    resources = [local.ecs_service_arn]
+  }
+
+  statement {
+    sid     = "PassECSTaskRoles"
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+
+    resources = [
+      local.ecs_task_execution_role_arn,
+      local.ecs_task_role_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+locals {
+  deployment_policy_json = var.deployment_type == "frontend" ? (
+    data.aws_iam_policy_document.frontend_deployment[0].json
+  ) : data.aws_iam_policy_document.backend_deployment[0].json
 }
 
 resource "aws_iam_policy" "github_oidc_policy" {
   name        = local.policy_name
-  description = "Deployment policy for ${var.github_repo}:${var.branch}"
-  policy      = data.aws_iam_policy_document.github_deployment.json
+  description = "GitHub ${var.deployment_type} deployment policy for ${var.github_repo}:${var.branch}"
+  policy      = local.deployment_policy_json
 
-  tags = {
-    Project     = var.project_name
-    Environment = var.environment
-    ManagedBy   = "Terraform"
+  tags = local.common_tags
+
+  lifecycle {
+    precondition {
+      condition = var.deployment_type != "frontend" || (
+        var.frontend_bucket_arn != null &&
+        var.cloudfront_distribution_arn != null
+      )
+
+      error_message = "frontend_bucket_arn and cloudfront_distribution_arn are required for frontend deployment roles."
+    }
+
+    precondition {
+      condition = var.deployment_type != "backend" || (
+        var.ecr_repository_arn != null &&
+        var.ecs_service_arn != null &&
+        var.ecs_task_execution_role_arn != null &&
+        var.ecs_task_role_arn != null
+      )
+
+      error_message = "ecr_repository_arn, ecs_service_arn, ecs_task_execution_role_arn, and ecs_task_role_arn are required for backend deployment roles."
+    }
   }
 }
 

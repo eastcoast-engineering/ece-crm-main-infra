@@ -1,75 +1,57 @@
 environment = "prod"
 root_domain = "quotashark.com"
 
-front_website_github_repo = "eastcoast-engineering/eastcoast-engineering-CRM-frontend"
+front_website_github_repo   = "eastcoast-engineering/eastcoast-engineering-CRM-frontend"
 front_website_github_branch = "main"
 
+backend_github_repo   = "eastcoast-engineering/corporate-software-backend-template"
+backend_github_branch = "main"
+
+# For a GitHub repository created after July 15, 2026, set the exact immutable
+# subject shown by GitHub, for example:
+# backend_github_subject_override = "repo:OWNER@OWNER_ID/REPO@REPO_ID:ref:refs/heads/main"
+
+backend_vpc_cidr = "10.40.0.0/16"
+
+api_public       = true
+api_public_cidrs = ["0.0.0.0/0"]
+api_private_cidrs = []
+
+backend_container_port        = 8080
+backend_health_check_path     = "/health"
+backend_task_cpu              = 512
+backend_task_memory           = 1024
+backend_initial_desired_count = 0
+
+backend_container_environment = {
+  RUST_LOG = "info"
+}
+
+database_public       = false
+database_public_cidrs = []
+
+database_name                  = "quotashark"
+database_username              = "quotashark_admin"
+database_engine_version        = "16"
+database_instance_class        = "db.t4g.micro"
+database_allocated_storage     = 20
+database_max_allocated_storage = 100
+database_backup_retention_days = 7
+database_multi_az              = false
+database_deletion_protection   = true
+database_skip_final_snapshot   = false
+database_apply_immediately     = false
 
 records = [
-  # # email receiving MX record via improvMX
-  # {
-  #   name    = "quotashark.com"
-  #   type    = "MX"
-  #   ttl     = 300
-  #   records = [
-  #     "10 mx1.improvmx.com",
-  #     "20 mx2.improvmx.com"
-  #   ]
-  # },
-  # {
-  #   name    = "quotashark.com"
-  #   type    = "TXT"
-  #   ttl     = 300
-  #   records = [
-  #     "v=spf1 include:spf.improvmx.com ~all"
-  #   ]
-  # },
-  # # email sending DKIM
-  # {
-  #   name    = "dkimprovmx1._domainkey"
-  #   type    = "CNAME"
-  #   ttl     = 300
-  #   records = [
-  #     "dkimprovmx1.improvmx.com"
-  #   ]
-  # },
-  # {
-  #   name    = "dkimprovmx2._domainkey"
-  #   type    = "CNAME"
-  #   ttl     = 300
-  #   records = [
-  #     "dkimprovmx2.improvmx.com"
-  #   ]
-  # },
-  # {
-  #   name    = "_dmarc"
-  #   type    = "TXT"
-  #   ttl     = 300
-  #   records = [
-  #     "v=DMARC1; p=none;"
-  #   ]
-  # },
-  # # google crawler
-  # {
-  #   name    = "sr5qj33szxau"
-  #   type    = "CNAME"
-  #   ttl     = 300
-  #   records = [
-  #     "gv-cv7smpbbxbatj2.dv.googlehosted.com"
-  #   ]
-  # },
-  # www subdomain
   {
     name    = "www"
     type    = "CNAME"
     ttl     = 300
-    records = [
-      "quotashark.com"
-    ]
+    records = ["quotashark.com"]
   }
 ]
 
-# Delegated child zones
+# Replace these values whenever the dev hosted zone is recreated.
 delegations = [
   {
     name = "dev.quotashark.com"
@@ -81,4 +63,3 @@ delegations = [
     ]
   }
 ]
-
