@@ -56,10 +56,10 @@ delegations = [
   {
     name = "dev.quotashark.com"
     ns = [
-      "ns-1405.awsdns-47.org",
-      "ns-1673.awsdns-17.co.uk",
-      "ns-728.awsdns-27.net",
-      "ns-95.awsdns-11.com",
+      "ns-520.awsdns-01.net",
+      "ns-9.awsdns-01.com",
+      "ns-1953.awsdns-52.co.uk",
+      "ns-1469.awsdns-55.org",
     ]
   }
 ]
