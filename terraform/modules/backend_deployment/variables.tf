@@ -79,6 +79,35 @@ variable "database_secret_arn" {
   type        = string
 }
 
+variable "database_ssl_mode" {
+  description = "PostgreSQL SSL mode used by the backend and migration task."
+  type        = string
+  default     = "require"
+}
+
+variable "storage_bucket_name" {
+  description = "Optional globally unique backend file bucket name."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "storage_cors_allowed_origins" {
+  description = "Frontend origins allowed to upload through S3 presigned URLs."
+  type        = list(string)
+}
+
+variable "secret_recovery_window_days" {
+  description = "Secrets Manager recovery window for backend runtime secrets."
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.secret_recovery_window_days == 0 || (var.secret_recovery_window_days >= 7 && var.secret_recovery_window_days <= 30)
+    error_message = "secret_recovery_window_days must be 0 or between 7 and 30."
+  }
+}
+
 variable "container_port" {
   description = "Actix container port."
   type        = number
@@ -113,6 +142,33 @@ variable "container_environment" {
   description = "Additional non-sensitive Actix environment variables."
   type        = map(string)
   default     = {}
+
+  validation {
+    condition = length(setintersection(
+      toset(keys(var.container_environment)),
+      toset([
+        "ADDRESS",
+        "APP_ENV",
+        "AWS_REGION",
+        "AWS_S3_BUCKET",
+        "DB_HOST",
+        "DB_NAME",
+        "DB_PASSWORD",
+        "DB_PORT",
+        "DB_SSL_MODE",
+        "DB_USER",
+        "EMAIL_ENCRYPTION_KEY",
+        "FILE_STORAGE_DRIVER",
+        "INTERGRATION_ENCRYPTION_KEY",
+        "JWT_SECRET",
+        "PORT",
+        "S3_BUCKET",
+        "S3_PATH_STYLE",
+        "S3_REGION",
+      ])
+    )) == 0
+    error_message = "container_environment cannot override reserved database, secret, network, or storage keys."
+  }
 }
 
 variable "log_retention_days" {

@@ -16,22 +16,15 @@ variable "root_domain" {
   default     = "quotashark.com"
 }
 
-variable "front_website_github_repo" {
+variable "frontend_github_repo" {
   description = "GitHub repository for the frontend website."
   type        = string
 }
 
-variable "front_website_github_branch" {
+variable "frontend_github_branch" {
   description = "Frontend branch allowed to deploy to production."
   type        = string
   default     = "main"
-}
-
-variable "front_website_github_subject_override" {
-  description = "Optional exact frontend GitHub OIDC subject."
-  type        = string
-  default     = null
-  nullable    = true
 }
 
 variable "backend_github_repo" {
@@ -150,6 +143,31 @@ variable "database_username" {
   default = "quotashark_admin"
 }
 
+variable "database_ssl_mode" {
+  description = "PostgreSQL SSL mode used by API and migration tasks."
+  type        = string
+  default     = "require"
+}
+
+variable "backend_storage_bucket_name" {
+  description = "Optional globally unique production backend file bucket name."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "backend_storage_cors_allowed_origins" {
+  description = "Production browser origins allowed to use presigned S3 uploads."
+  type        = list(string)
+  default     = ["https://quotashark.com", "https://www.quotashark.com"]
+}
+
+variable "backend_secret_recovery_window_days" {
+  description = "Recovery window for production backend runtime secrets."
+  type        = number
+  default     = 30
+}
+
 variable "database_engine_version" {
   type    = string
   default = "16"
@@ -193,4 +211,11 @@ variable "database_skip_final_snapshot" {
 variable "database_apply_immediately" {
   type    = bool
   default = false
+}
+
+variable "frontend_github_subject_override" {
+  description = "Exact GitHub OIDC subject for the frontend repository."
+  type        = string
+  default     = null
+  nullable    = true
 }

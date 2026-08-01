@@ -1,0 +1,103 @@
+resource "aws_s3_bucket" "files" {
+  bucket        = coalesce(var.storage_bucket_name, "${local.name_prefix}-backend-files-${data.aws_caller_identity.current.account_id}")
+  force_destroy = false
+
+  tags = merge(local.common_tags, {
+    Name      = "${local.name_prefix}-backend-files"
+    Component = "BackendStorage"
+  })
+}
+
+resource "aws_s3_bucket_ownership_controls" "files" {
+  bucket = aws_s3_bucket.files.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "files" {
+  bucket = aws_s3_bucket.files.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "files" {
+  bucket = aws_s3_bucket.files.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_versioning" "files" {
+  bucket = aws_s3_bucket.files.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_cors_configuration" "files" {
+  bucket = aws_s3_bucket.files.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "HEAD", "PUT"]
+    allowed_origins = var.storage_cors_allowed_origins
+    expose_headers  = ["ETag"]
+    max_age_seconds = 300
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "files" {
+  bucket = aws_s3_bucket.files.id
+
+  rule {
+    id     = "abort-incomplete-multipart-uploads"
+    status = "Enabled"
+
+    filter {}
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+}
+
+resource "random_password" "runtime" {
+  for_each = {
+    jwt         = 64
+    email       = 32
+    integration = 32
+  }
+
+  length  = each.value
+  special = false
+}
+
+resource "aws_secretsmanager_secret" "runtime" {
+  name                    = "${local.name_prefix}/backend/runtime"
+  description             = "Runtime cryptographic secrets for the ${var.environment} Quotashark backend"
+  recovery_window_in_days = var.secret_recovery_window_days
+
+  tags = merge(local.common_tags, {
+    Name      = "${local.name_prefix}-backend-runtime"
+    Component = "BackendSecrets"
+  })
+}
+
+resource "aws_secretsmanager_secret_version" "runtime" {
+  secret_id = aws_secretsmanager_secret.runtime.id
+
+  secret_string = jsonencode({
+    JWT_SECRET                  = random_password.runtime["jwt"].result
+    EMAIL_ENCRYPTION_KEY        = random_password.runtime["email"].result
+    INTERGRATION_ENCRYPTION_KEY = random_password.runtime["integration"].result
+  })
+}

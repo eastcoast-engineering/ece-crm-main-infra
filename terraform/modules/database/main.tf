@@ -57,7 +57,7 @@ resource "aws_db_instance" "postgres" {
   multi_az               = var.multi_az
 
   backup_retention_period = var.backup_retention_days
-  copy_tags_to_snapshot    = true
+  copy_tags_to_snapshot   = true
 
   auto_minor_version_upgrade = true
   apply_immediately          = var.apply_immediately

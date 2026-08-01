@@ -34,6 +34,19 @@ output "database_endpoint" {
   value = module.database.endpoint
 }
 
+output "database_secret_arn" {
+  description = "RDS-managed Secrets Manager ARN containing database credentials."
+  value       = module.database.master_user_secret_arn
+}
+
+output "backend_storage_bucket_name" {
+  value = module.backend.storage_bucket_name
+}
+
+output "backend_runtime_secret_arn" {
+  value = module.backend.runtime_secret_arn
+}
+
 output "root_zone_name_servers" {
   value = module.master_dns.name_servers
 }

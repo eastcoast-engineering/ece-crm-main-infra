@@ -53,7 +53,7 @@ resource "aws_ecs_task_definition" "api" {
             value = var.environment
           },
           {
-            name  = "HOST"
+            name  = "ADDRESS"
             value = "0.0.0.0"
           },
           {
@@ -75,6 +75,34 @@ resource "aws_ecs_task_definition" "api" {
           {
             name  = "DB_USER"
             value = var.database_username
+          },
+          {
+            name  = "DB_SSL_MODE"
+            value = var.database_ssl_mode
+          },
+          {
+            name  = "AWS_REGION"
+            value = var.aws_region
+          },
+          {
+            name  = "FILE_STORAGE_DRIVER"
+            value = "s3"
+          },
+          {
+            name  = "S3_BUCKET"
+            value = aws_s3_bucket.files.id
+          },
+          {
+            name  = "AWS_S3_BUCKET"
+            value = aws_s3_bucket.files.id
+          },
+          {
+            name  = "S3_REGION"
+            value = var.aws_region
+          },
+          {
+            name  = "S3_PATH_STYLE"
+            value = "false"
           }
         ],
         [
@@ -89,6 +117,18 @@ resource "aws_ecs_task_definition" "api" {
         {
           name      = "DB_PASSWORD"
           valueFrom = "${var.database_secret_arn}:password::"
+        },
+        {
+          name      = "JWT_SECRET"
+          valueFrom = "${aws_secretsmanager_secret.runtime.arn}:JWT_SECRET::"
+        },
+        {
+          name      = "EMAIL_ENCRYPTION_KEY"
+          valueFrom = "${aws_secretsmanager_secret.runtime.arn}:EMAIL_ENCRYPTION_KEY::"
+        },
+        {
+          name      = "INTERGRATION_ENCRYPTION_KEY"
+          valueFrom = "${aws_secretsmanager_secret.runtime.arn}:INTERGRATION_ENCRYPTION_KEY::"
         }
       ]
 
@@ -106,7 +146,8 @@ resource "aws_ecs_task_definition" "api" {
 
   depends_on = [
     aws_iam_role_policy_attachment.ecs_execution,
-    aws_iam_role_policy.database_secret,
+    aws_iam_role_policy.runtime_secrets,
+    aws_secretsmanager_secret_version.runtime,
   ]
 
   tags = local.common_tags

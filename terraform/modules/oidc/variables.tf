@@ -70,6 +70,20 @@ variable "ecs_service_arn" {
   nullable    = true
 }
 
+variable "ecs_cluster_arn" {
+  description = "Backend ECS cluster ARN. Required when deployment_type is backend."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "ecs_task_definition_arn_pattern" {
+  description = "Backend ECS task-definition revision ARN pattern. Required when deployment_type is backend."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "ecs_task_execution_role_arn" {
   description = "ECS task execution role ARN. Required when deployment_type is backend."
   type        = string

@@ -22,23 +22,24 @@ variable "sub_domain" {
   default     = "dev"
 }
 
-variable "front_website_github_repo" {
+variable "frontend_github_repo" {
   description = "GitHub repository for the frontend website."
   type        = string
 }
 
-variable "front_website_github_branch" {
+variable "frontend_github_branch" {
   description = "Frontend branch allowed to deploy to development."
   type        = string
   default     = "dev"
 }
 
-variable "front_website_github_subject_override" {
+variable "frontend_github_subject_override" {
   description = "Optional exact frontend GitHub OIDC subject."
   type        = string
   default     = null
   nullable    = true
 }
+
 
 variable "backend_github_repo" {
   description = "GitHub repository containing the Actix backend."
@@ -132,6 +133,31 @@ variable "database_name" {
 variable "database_username" {
   type    = string
   default = "quotashark_admin"
+}
+
+variable "database_ssl_mode" {
+  description = "PostgreSQL SSL mode used by API and migration tasks."
+  type        = string
+  default     = "require"
+}
+
+variable "backend_storage_bucket_name" {
+  description = "Optional globally unique development backend file bucket name."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "backend_storage_cors_allowed_origins" {
+  description = "Development browser origins allowed to use presigned S3 uploads."
+  type        = list(string)
+  default     = ["https://dev.quotashark.com"]
+}
+
+variable "backend_secret_recovery_window_days" {
+  description = "Recovery window for development backend runtime secrets."
+  type        = number
+  default     = 7
 }
 
 variable "database_engine_version" {

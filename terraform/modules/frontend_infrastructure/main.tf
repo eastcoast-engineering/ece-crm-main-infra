@@ -38,9 +38,9 @@ resource "aws_cloudfront_origin_access_control" "frontend" {
 }
 
 resource "aws_acm_certificate" "frontend" {
-  domain_name       = var.domain_name
+  domain_name               = var.domain_name
   subject_alternative_names = ["www.${var.domain_name}"]
-  validation_method = "DNS"
+  validation_method         = "DNS"
 
   lifecycle {
     create_before_destroy = true
@@ -65,14 +65,14 @@ resource "aws_route53_record" "frontend_validation" {
 }
 
 resource "aws_acm_certificate_validation" "frontend" {
-  certificate_arn         = aws_acm_certificate.frontend.arn
+  certificate_arn = aws_acm_certificate.frontend.arn
   validation_record_fqdns = [
     for r in aws_route53_record.frontend_validation : r.fqdn
   ]
 }
 
 resource "aws_cloudfront_distribution" "frontend" {
-  
+
   depends_on = [
     aws_acm_certificate_validation.frontend
   ]
@@ -81,9 +81,9 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_root_object = "index.html"
 
   aliases = [
-  var.domain_name,
-  "www.${var.domain_name}"
-]
+    var.domain_name,
+    "www.${var.domain_name}"
+  ]
 
   viewer_certificate {
     acm_certificate_arn      = aws_acm_certificate.frontend.arn
@@ -106,8 +106,8 @@ resource "aws_cloudfront_distribution" "frontend" {
       function_arn = aws_cloudfront_function.redirect_www.arn
     }
 
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods  = ["GET", "HEAD"]
 
     compress = true
 

@@ -20,7 +20,7 @@ variable "delegations" {
 
 variable "alias_records" {
   type = list(object({
-    name    = string
+    name     = string
     dns_name = string
     zone_id  = string
   }))

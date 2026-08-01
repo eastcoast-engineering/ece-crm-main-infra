@@ -43,13 +43,15 @@ locals {
     "repo:${var.github_repo}:ref:refs/heads/${var.branch}"
   )
 
-  frontend_bucket_arn          = var.frontend_bucket_arn != null ? var.frontend_bucket_arn : "*"
-  frontend_objects_arn         = var.frontend_bucket_arn != null ? "${var.frontend_bucket_arn}/*" : "*"
-  cloudfront_distribution_arn  = var.cloudfront_distribution_arn != null ? var.cloudfront_distribution_arn : "*"
-  ecr_repository_arn           = var.ecr_repository_arn != null ? var.ecr_repository_arn : "*"
-  ecs_service_arn              = var.ecs_service_arn != null ? var.ecs_service_arn : "*"
-  ecs_task_execution_role_arn  = var.ecs_task_execution_role_arn != null ? var.ecs_task_execution_role_arn : "*"
-  ecs_task_role_arn            = var.ecs_task_role_arn != null ? var.ecs_task_role_arn : "*"
+  frontend_bucket_arn         = var.frontend_bucket_arn != null ? var.frontend_bucket_arn : "*"
+  frontend_objects_arn        = var.frontend_bucket_arn != null ? "${var.frontend_bucket_arn}/*" : "*"
+  cloudfront_distribution_arn = var.cloudfront_distribution_arn != null ? var.cloudfront_distribution_arn : "*"
+  ecr_repository_arn          = var.ecr_repository_arn != null ? var.ecr_repository_arn : "*"
+  ecs_service_arn             = var.ecs_service_arn != null ? var.ecs_service_arn : "*"
+  ecs_cluster_arn             = var.ecs_cluster_arn != null ? var.ecs_cluster_arn : "*"
+  ecs_task_definition_arn     = var.ecs_task_definition_arn_pattern != null ? var.ecs_task_definition_arn_pattern : "*"
+  ecs_task_execution_role_arn = var.ecs_task_execution_role_arn != null ? var.ecs_task_execution_role_arn : "*"
+  ecs_task_role_arn           = var.ecs_task_role_arn != null ? var.ecs_task_role_arn : "*"
 
   common_tags = merge(
     {
@@ -195,6 +197,27 @@ data "aws_iam_policy_document" "backend_deployment" {
   }
 
   statement {
+    sid     = "RunDatabaseMigrations"
+    effect  = "Allow"
+    actions = ["ecs:RunTask"]
+
+    resources = [local.ecs_task_definition_arn]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "ecs:cluster"
+      values   = [local.ecs_cluster_arn]
+    }
+  }
+
+  statement {
+    sid       = "ObserveMigrationTasks"
+    effect    = "Allow"
+    actions   = ["ecs:DescribeTasks"]
+    resources = ["*"]
+  }
+
+  statement {
     sid     = "PassECSTaskRoles"
     effect  = "Allow"
     actions = ["iam:PassRole"]
@@ -238,12 +261,14 @@ resource "aws_iam_policy" "github_oidc_policy" {
     precondition {
       condition = var.deployment_type != "backend" || (
         var.ecr_repository_arn != null &&
+        var.ecs_cluster_arn != null &&
         var.ecs_service_arn != null &&
+        var.ecs_task_definition_arn_pattern != null &&
         var.ecs_task_execution_role_arn != null &&
         var.ecs_task_role_arn != null
       )
 
-      error_message = "ecr_repository_arn, ecs_service_arn, ecs_task_execution_role_arn, and ecs_task_role_arn are required for backend deployment roles."
+      error_message = "ecr_repository_arn, ecs_cluster_arn, ecs_service_arn, ecs_task_definition_arn_pattern, ecs_task_execution_role_arn, and ecs_task_role_arn are required for backend deployment roles."
     }
   }
 }

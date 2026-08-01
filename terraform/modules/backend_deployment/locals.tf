@@ -13,7 +13,7 @@ locals {
     "-"
   )
 
-  name_prefix   = substr("${local.project_slug}-${local.environment_slug}", 0, 24)
+  name_prefix    = substr("${local.project_slug}-${local.environment_slug}", 0, 24)
   container_name = "${local.name_prefix}-api"
 
   load_balancer_subnet_ids = var.api_public ? var.public_subnet_ids : var.private_subnet_ids

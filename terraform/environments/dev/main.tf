@@ -32,12 +32,18 @@ module "frontend_oidc" {
   environment     = var.environment
   deployment_type = "frontend"
 
-  github_repo             = var.front_website_github_repo
-  branch                  = var.front_website_github_branch
-  github_subject_override = var.front_website_github_subject_override
+  github_repo = var.frontend_github_repo
+  branch      = var.frontend_github_branch
 
-  frontend_bucket_arn         = module.frontend.bucket_arn
-  cloudfront_distribution_arn = module.frontend.cloudfront_distribution_arn
+  github_subject_override = (
+    var.frontend_github_subject_override
+  )
+
+  frontend_bucket_arn = module.frontend.bucket_arn
+
+  cloudfront_distribution_arn = (
+    module.frontend.cloudfront_distribution_arn
+  )
 }
 
 module "backend_network" {
@@ -92,7 +98,7 @@ module "backend" {
 
   domain_name           = local.backend_api_domain
   public_hosted_zone_id = module.slave_dns.zone_id
-  api_public             = var.api_public
+  api_public            = var.api_public
 
   vpc_id                          = module.backend_network.vpc_id
   public_subnet_ids               = module.backend_network.public_subnet_ids
@@ -105,6 +111,11 @@ module "backend" {
   database_name       = module.database.database_name
   database_username   = module.database.database_username
   database_secret_arn = module.database.master_user_secret_arn
+  database_ssl_mode   = var.database_ssl_mode
+
+  storage_bucket_name          = var.backend_storage_bucket_name
+  storage_cors_allowed_origins = var.backend_storage_cors_allowed_origins
+  secret_recovery_window_days  = var.backend_secret_recovery_window_days
 
   container_port        = var.backend_container_port
   health_check_path     = var.backend_health_check_path
@@ -127,8 +138,10 @@ module "backend_oidc" {
   branch                  = var.backend_github_branch
   github_subject_override = var.backend_github_subject_override
 
-  ecr_repository_arn          = module.backend.ecr_repository_arn
-  ecs_service_arn             = module.backend.ecs_service_arn
-  ecs_task_execution_role_arn = module.backend.ecs_task_execution_role_arn
-  ecs_task_role_arn           = module.backend.ecs_task_role_arn
+  ecr_repository_arn              = module.backend.ecr_repository_arn
+  ecs_cluster_arn                 = module.backend.ecs_cluster_arn
+  ecs_service_arn                 = module.backend.ecs_service_arn
+  ecs_task_definition_arn_pattern = module.backend.ecs_task_definition_arn_pattern
+  ecs_task_execution_role_arn     = module.backend.ecs_task_execution_role_arn
+  ecs_task_role_arn               = module.backend.ecs_task_role_arn
 }
