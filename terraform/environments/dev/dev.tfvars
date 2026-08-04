@@ -22,21 +22,27 @@ backend_task_memory           = 1024
 backend_initial_desired_count = 0
 
 backend_container_environment = {
-  RUST_LOG = "debug"
+  RUST_LOG           = "debug",
+  AWS_SES_FROM_EMAIL = "noreply@eastcoast.engineering",
+  AWS_SES_FROM_NAME  = "Quota Shark"
 }
 
-database_public = false
+database_public = true
 
 # When database_public is true, use a precise address such as ["203.0.113.10/32"].
-database_public_cidrs = []
+database_public_cidrs = [
+  "104.28.160.62/32",
+  "102.64.68.146/32",
+  "104.28.164.87/32"
+]
 
 database_name                  = "quotashark"
 database_username              = "quotashark_admin"
 database_engine_version        = "16"
 database_instance_class        = "db.t4g.micro"
 database_allocated_storage     = 20
-database_max_allocated_storage = 50
-database_backup_retention_days = 1
+database_max_allocated_storage = 0
+database_backup_retention_days = 0
 database_multi_az              = false
 database_deletion_protection   = false
 database_skip_final_snapshot   = true

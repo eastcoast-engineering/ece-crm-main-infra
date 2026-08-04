@@ -188,3 +188,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "enable_container_insights" {
+  description = "Enable paid ECS Container Insights metrics"
+  type        = bool
+  default     = false
+}

@@ -27,6 +27,8 @@ backend_initial_desired_count = 0
 
 backend_container_environment = {
   RUST_LOG = "info"
+  AWS_SES_FROM_EMAIL = "noreply@eastcoast.engineering",
+  AWS_SES_FROM_NAME  = "Quota Shark"
 }
 
 database_public       = false

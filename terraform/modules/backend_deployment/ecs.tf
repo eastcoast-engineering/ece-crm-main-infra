@@ -10,7 +10,7 @@ resource "aws_ecs_cluster" "api" {
 
   setting {
     name  = "containerInsights"
-    value = "enabled"
+    value = var.enable_container_insights ? "enabled" : "disabled"
   }
 
   tags = local.common_tags
@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "api" {
 
   runtime_platform {
     operating_system_family = "LINUX"
-    cpu_architecture        = "X86_64"
+    cpu_architecture        = "ARM64"
   }
 
   container_definitions = jsonencode([
@@ -158,7 +158,7 @@ resource "aws_ecs_service" "api" {
   cluster         = aws_ecs_cluster.api.id
   task_definition = aws_ecs_task_definition.api.arn
   desired_count   = var.initial_desired_count
-  launch_type     = "FARGATE"
+  # launch_type     = "FARGATE"
 
   platform_version = "LATEST"
 
@@ -168,6 +168,12 @@ resource "aws_ecs_service" "api" {
     enable   = true
     rollback = true
   }
+
+  capacity_provider_strategy {
+  capacity_provider = var.environment == "dev" ? "FARGATE_SPOT" : "FARGATE"
+  base              = 0
+  weight            = 1
+}
 
   network_configuration {
     subnets          = var.public_subnet_ids
@@ -188,7 +194,6 @@ resource "aws_ecs_service" "api" {
   lifecycle {
     ignore_changes = [
       task_definition,
-      desired_count,
     ]
   }
 

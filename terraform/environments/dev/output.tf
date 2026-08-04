@@ -50,3 +50,11 @@ output "backend_runtime_secret_arn" {
 output "dev_zone_name_servers" {
   value = module.slave_dns.name_servers
 }
+
+output "database_credentials" {
+  description = "Development database credentials when database_public is true."
+
+  value = var.database_public ? module.database.credentials : null
+
+  sensitive = true
+}

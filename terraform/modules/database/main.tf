@@ -71,3 +71,19 @@ resource "aws_db_instance" "postgres" {
     Name = "${local.name_prefix}-postgres"
   })
 }
+
+data "aws_secretsmanager_secret_version" "postgres_master" {
+  count = var.publicly_accessible ? 1 : 0
+
+  secret_id = aws_db_instance.postgres.master_user_secret[0].secret_arn
+
+  depends_on = [
+    aws_db_instance.postgres
+  ]
+}
+
+locals {
+  postgres_master_credentials = var.publicly_accessible ? jsondecode(
+    data.aws_secretsmanager_secret_version.postgres_master[0].secret_string
+  ) : null
+}

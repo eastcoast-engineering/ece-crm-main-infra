@@ -124,6 +124,7 @@ module "backend" {
   initial_desired_count = var.backend_initial_desired_count
   container_environment = var.backend_container_environment
   ecr_force_delete      = true
+  enable_container_insights = false
 }
 
 module "backend_oidc" {
